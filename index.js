@@ -6,6 +6,7 @@ var walkdir = require("walkdir");
 var _ = require('lodash');
 var minimatch = require('minimatch');
 var util = require('util');
+var acorn = require('acorn-jsx');
 
 function getArgumentFromCall(node) {
   return node.type === 'CallExpression' && node.arguments[0]
@@ -29,7 +30,7 @@ function isImportDeclaration(node) {
   return node.type === 'ImportDeclaration' && node.source && node.source.value;
 }
 
-function getModulesRequiredFromFilename(filename) {
+function getModulesRequiredFromFilename(filename, jsx) {
   var content = fs.readFileSync(filename, "utf-8");
   if (!content) {
     throw new TypeError('cannot read from file ' + filename);
@@ -37,23 +38,31 @@ function getModulesRequiredFromFilename(filename) {
 
   var walker = new Walker();
   var dependencies = [];
+  var ast;
 
   try {
-    walker.walk(content, function(node) {
-      if (isRequireFunction(node) || isGruntLoadTaskCall(node)) {
-        dependencies.push(getArgumentFromCall(node));
-      } else if (isImportDeclaration(node)) {
-        dependencies.push(node.source.value);
-      }
+    ast = acorn.parse(content, {
+      ecmaVersion: 6,
+      sourceType: 'module',
+      allowHashBang: true,
+      plugins: { jsx: jsx }
     });
-
-    return dependencies;
-  } catch (err) {
+  } catch (err) { // SyntaxError
     return [];
   }
+
+  walker.walk(ast, function(node) {
+    if (isRequireFunction(node) || isGruntLoadTaskCall(node)) {
+      dependencies.push(getArgumentFromCall(node));
+    } else if (isImportDeclaration(node)) {
+      dependencies.push(node.source.value);
+    }
+  });
+
+  return dependencies;
 }
 
-function checkDirectory(dir, ignoreDirs, deps, devDeps, extensions) {
+function checkDirectory(dir, ignoreDirs, deps, devDeps, extensions, jsx) {
 
   var deferred = q.defer();
   var directoryPromises = [];
@@ -66,12 +75,12 @@ function checkDirectory(dir, ignoreDirs, deps, devDeps, extensions) {
         return;
     }
 
-    directoryPromises.push(checkDirectory(subdir, ignoreDirs, deps, devDeps, extensions));
+    directoryPromises.push(checkDirectory(subdir, ignoreDirs, deps, devDeps, extensions, jsx));
   });
 
   finder.on("file", function (filename) {
     if (extensions.indexOf(path.extname(filename)) !== -1) {
-      var modulesRequired = getModulesRequiredFromFilename(filename);
+      var modulesRequired = getModulesRequiredFromFilename(filename, jsx);
       if (util.isError(modulesRequired)) {
         invalidFiles[filename] = modulesRequired;
       } else {
@@ -146,7 +155,7 @@ function depCheck(rootDir, options, cb) {
       .valueOf();
   }
 
-  return checkDirectory(rootDir, ignoreDirs, deps, devDeps, extensions)
+  return checkDirectory(rootDir, ignoreDirs, deps, devDeps, extensions, options.jsx)
     .then(cb)
     .done();
 }
