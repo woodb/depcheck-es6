@@ -59,7 +59,7 @@ describe("depcheck", function () {
     });
   });
 
-  it("should should ignore ignoreDirs", function testUnused(done) {
+  it("should ignore ignoreDirs", function testUnused(done) {
     var absolutePath = path.resolve("test/fake_modules/bad_deep");
 
     depcheck(absolutePath, { "ignoreDirs": ['sandbox'] }, function checked(unused) {
@@ -69,7 +69,7 @@ describe("depcheck", function () {
     });
   });
 
-  it("should should ignore ignoreMatches", function testUnused(done) {
+  it("should ignore ignoreMatches", function testUnused(done) {
     var absolutePath = path.resolve("test/fake_modules/bad");
 
     depcheck(absolutePath, { "ignoreMatches": ['o*'] }, function checked(unused) {
@@ -78,7 +78,7 @@ describe("depcheck", function () {
     });
   });
 
-  it("should should ignore bad javascript", function testBadJS(done) {
+  it("should ignore bad javascript", function testBadJS(done) {
     var absolutePath = path.resolve("test/fake_modules/bad_js");
 
     depcheck(absolutePath, {  }, function checked(unused) {
