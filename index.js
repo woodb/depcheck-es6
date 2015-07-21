@@ -53,7 +53,7 @@ function getModulesRequiredFromFilename(filename) {
   }
 }
 
-function checkDirectory(dir, ignoreDirs, deps, devDeps) {
+function checkDirectory(dir, ignoreDirs, deps, devDeps, extensions) {
 
   var deferred = q.defer();
   var directoryPromises = [];
@@ -66,11 +66,11 @@ function checkDirectory(dir, ignoreDirs, deps, devDeps) {
         return;
     }
 
-    directoryPromises.push(checkDirectory(subdir, ignoreDirs, deps, devDeps));
+    directoryPromises.push(checkDirectory(subdir, ignoreDirs, deps, devDeps, extensions));
   });
 
   finder.on("file", function (filename) {
-    if (path.extname(filename) === ".js") {
+    if (extensions.indexOf(path.extname(filename)) !== -1) {
       var modulesRequired = getModulesRequiredFromFilename(filename);
       if (util.isError(modulesRequired)) {
         invalidFiles[filename] = modulesRequired;
@@ -111,6 +111,7 @@ function depCheck(rootDir, options, cb) {
   var pkg = options.package || require(path.join(rootDir, 'package.json'));
   var deps = filterDependencies(pkg.dependencies);
   var devDeps = filterDependencies(options.withoutDev ? [] : pkg.devDependencies);
+  var extensions = options.extensions || ['.js'];
   var ignoreDirs = _([
       '.git',
       '.svn',
@@ -145,7 +146,7 @@ function depCheck(rootDir, options, cb) {
       .valueOf();
   }
 
-  return checkDirectory(rootDir, ignoreDirs, deps, devDeps)
+  return checkDirectory(rootDir, ignoreDirs, deps, devDeps, extensions)
     .then(cb)
     .done();
 }

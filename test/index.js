@@ -106,6 +106,15 @@ describe("depcheck", function () {
     });
   });
 
+  it("should accept extensions for options", function testNested(done) {
+    var absolutePath = path.resolve("test/fake_modules/extensions");
+
+    depcheck(absolutePath, { extensions: ['.es'] }, function checked(unused) {
+      assert.equal(unused.dependencies.length, 0);
+      done();
+    });
+  });
+
   it("should allow dynamic package metadata", function testDynamic(done) {
     var absolutePath = path.resolve("test/fake_modules/bad");
 
