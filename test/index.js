@@ -115,6 +115,15 @@ describe("depcheck", function () {
     });
   });
 
+  it('should support jsx syntax when enabled', function testJsx(done) {
+    var absolutePath = path.resolve("test/fake_modules/jsx");
+
+    depcheck(absolutePath, { extensions: ['.jsx'], jsx: true }, function checked(unused) {
+      assert.equal(unused.dependencies.length, 0);
+      done();
+    });
+  });
+
   it("should allow dynamic package metadata", function testDynamic(done) {
     var absolutePath = path.resolve("test/fake_modules/bad");
 
